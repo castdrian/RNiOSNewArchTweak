@@ -5,6 +5,7 @@
   "scripts": {
     "android": "react-native run-android",
     "ios": "react-native run-ios",
+	"ipa": "xcodebuild clean archive -workspace ios/BridgelessApp.xcworkspace -scheme BridgelessApp -configuration Release -destination generic/platform=iOS -archivePath build/BridgelessApp.xcarchive CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_ALLOWED=NO | xcbeautify && cd build/BridgelessApp.xcarchive/Products && mv Applications Payload && zip -r BridgelessApp.ipa Payload && mv BridgelessApp.ipa ../..",
     "lint": "eslint .",
     "start": "react-native start",
     "test": "jest"

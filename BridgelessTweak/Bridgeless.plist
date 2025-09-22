@@ -6,7 +6,7 @@
 		<dict>
 			<key>Bundles</key>
 			<array>
-				<string>com.google.ios.youtube</string>
+				<string>org.reactjs.native.example.BridgelessApp</string>
 			</array>
 		</dict>
 	</dict>
