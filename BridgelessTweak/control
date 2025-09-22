@@ -1,0 +1,9 @@
+Name: Bridgeless
+Description: React Native new arch tweak
+Version: 1.0.0
+Package: dev.adrian.bridgeless
+Architecture: iphoneos-arm
+Maintainer: Adrian Castro
+Author: Adrian Castro
+Section: Tweaks
+Depends: ellekit
