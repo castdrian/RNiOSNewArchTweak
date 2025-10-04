@@ -28,7 +28,7 @@ resources/script.bundle: resources/script.js
 		rm -f "$@"; \
 	fi
 
-# before-all:: resources/script.bundle
+before-all:: resources/script.bundle
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 include $(THEOS_MAKE_PATH)/bundle.mk
