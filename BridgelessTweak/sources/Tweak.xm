@@ -214,7 +214,7 @@ static BOOL UBTryRegisterSegment(RCTInstance *instance) {
     return NO;
   }
 
-  static const uint32_t kUBSegmentId = 0x5EB1D1; // Arbitrary stable segment id.
+  static const uint32_t kUBSegmentId = 0x5EB1D1;
   [instance registerSegmentWithId:@(kUBSegmentId) path:path];
   UBLog("Registered script.bundle as segment id %u", (unsigned)kUBSegmentId);
   sInjectedOnce = YES;
@@ -261,13 +261,6 @@ static void UBWaitForBundleAndInject(RCTInstance *instance) {
   %orig(sourceURL);
   UBWaitForBundleAndInject(self);
 }
-
-- (void)_loadScriptFromSource:(id)source
-{
-  %orig(source);
-  UBWaitForBundleAndInject(self);
-}
-
 %end
 
 %ctor { UBLog("Tweak initialized"); }
