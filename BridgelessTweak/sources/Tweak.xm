@@ -14,7 +14,6 @@
 - (void)callFunctionOnBufferedRuntimeExecutor:
     (std::function<void(facebook::jsi::Runtime &runtime)> &&)executor;
 - (void)_loadJSBundle:(NSURL *)sourceURL;
-- (void)_loadScriptFromSource:(id)source;
 - (void)registerSegmentWithId:(NSNumber *)segmentId path:(NSString *)path;
 @end
 
