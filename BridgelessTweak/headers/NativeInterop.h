@@ -1,11 +1,11 @@
-#pragma once
-
+#import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 #import <jsi/jsi.h>
+
+#import "Logging.h"
 
 namespace bridgeless {
 
-void RegisterNativeInterop(facebook::jsi::Runtime &runtime);
+void registerNativeInterop(facebook::jsi::Runtime &runtime);
 
 }
-
-#define INTEROP_LOG(fmt, ...) NSLog(@"[Bridgeless][Interop] " fmt, ##__VA_ARGS__)

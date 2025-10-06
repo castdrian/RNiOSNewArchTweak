@@ -74,14 +74,12 @@
 			var message = baseMessage;
 			var systemVersion = getInteropSystemVersion();
 			if (systemVersion != null) {
-				log('Native interop systemVersion: ' + systemVersion);
 				message = baseMessage + ' (iOS ' + systemVersion + ')';
 			} else {
 				log('Native interop systemVersion unavailable');
 			}
 			alertModule.alert('bridgeless tweak', message);
 			state.alertShown = true;
-			log('Alert displayed (' + reason + '): ' + message);
 			return true;
 		} catch (err) {
 			log('Alert failed: ' + String(err && err.message ? err.message : err));
@@ -144,7 +142,6 @@
 		try {
 			g.__r = patchedRequire;
 			state.requireHookInstalled = true;
-			log('require hook installed');
 		} catch (err) {
 			log('require hook failed: ' + String(err && err.message ? err.message : err));
 		}

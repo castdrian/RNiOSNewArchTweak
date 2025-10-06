@@ -1,9 +1,4 @@
-#import <Foundation/Foundation.h>
-#import <UIKit/UIKit.h>
-
 #import "NativeInterop.h"
-
-#define INTEROP_LOG(fmt, ...) NSLog(@"[Bridgeless][Interop] " fmt, ##__VA_ARGS__)
 
 using namespace facebook;
 using namespace facebook::jsi;
@@ -11,10 +6,10 @@ using namespace facebook::jsi;
 namespace bridgeless {
 namespace {
 
-static constexpr const char *kGlobalName = "__bridgelessNative";
-static constexpr const char *kSystemVersionProp = "systemVersion";
+static constexpr const char *GLOBAL_NAME = "__bridgelessNative";
+static constexpr const char *SYSTEM_VERSION_PROP = "systemVersion";
 
-Value SystemVersionHostFunction(Runtime &runtime,
+Value systemVersionHostFunction(Runtime &runtime,
                                 const Value &thisValue,
                                 const Value *arguments,
                                 size_t count)
@@ -24,44 +19,26 @@ Value SystemVersionHostFunction(Runtime &runtime,
     (void) count;
     @autoreleasepool {
         NSString *version = [UIDevice currentDevice].systemVersion ?: @"";
-        INTEROP_LOG(@"systemVersion() called -> %@", version);
+        Log(@"systemVersion() called -> %@", version);
         const char *utf8 = [version UTF8String];
         std::string cppVersion = utf8 ? utf8 : "";
         return String::createFromUtf8(runtime, cppVersion);
     }
 }
+}  // namespace
 
-bool ShouldInstall(Runtime &runtime)
+void registerNativeInterop(Runtime &runtime)
 {
-    if (!runtime.global().hasProperty(runtime, kGlobalName))
-    {
-        return true;
-    }
-    auto existing = runtime.global().getProperty(runtime, kGlobalName);
-    return existing.isUndefined() || existing.isNull();
-}
-
-}
-
-void RegisterNativeInterop(Runtime &runtime)
-{
-    if (!ShouldInstall(runtime))
-    {
-        INTEROP_LOG(@"Interop already installed");
-        return;
-    }
-
     auto hostFunction = Function::createFromHostFunction(
         runtime,
-        PropNameID::forUtf8(runtime, kSystemVersionProp),
+        PropNameID::forUtf8(runtime, SYSTEM_VERSION_PROP),
         0,
-        SystemVersionHostFunction);
+        systemVersionHostFunction);
 
     Object interop(runtime);
-    interop.setProperty(runtime, kSystemVersionProp, std::move(hostFunction));
+    interop.setProperty(runtime, SYSTEM_VERSION_PROP, std::move(hostFunction));
 
-    runtime.global().setProperty(runtime, kGlobalName, std::move(interop));
-    INTEROP_LOG(@"Interop installed on runtime");
+    runtime.global().setProperty(runtime, GLOBAL_NAME, std::move(interop));
+    Log(@"Interop installed on runtime");
 }
-
-}
+}  // namespace bridgeless
