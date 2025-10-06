@@ -97,20 +97,12 @@ static std::shared_ptr<std::string> LoadPayloadSource(void)
 namespace {
 
 struct BytecodeBuffer final : public facebook::jsi::Buffer {
-    explicit BytecodeBuffer(std::shared_ptr<std::vector<uint8_t>> bytes) : bytes_(std::move(bytes))
-    {
-    }
-
-    size_t size() const override
-    {
-        return bytes_ ? bytes_->size() : 0;
-    }
-
+    explicit BytecodeBuffer(std::shared_ptr<std::vector<uint8_t>> bytes) : bytes_(std::move(bytes)) {}
+    size_t size() const override { return bytes_ ? bytes_->size() : 0; }
     const uint8_t *data() const override
     {
         return bytes_ && !bytes_->empty() ? bytes_->data() : nullptr;
     }
-
 private:
     std::shared_ptr<std::vector<uint8_t>> bytes_;
 };
@@ -151,28 +143,27 @@ static std::shared_ptr<std::vector<uint8_t>> LoadPayloadBytecode(void)
 }
 
 static void EvaluatePayload(facebook::jsi::Runtime                      &rt,
-                            const std::shared_ptr<std::string>          &jsSource,
-                            const std::shared_ptr<std::vector<uint8_t>> &bytecode)
+                                   const std::shared_ptr<std::vector<uint8_t>> &bytecode,
+                                   const std::shared_ptr<std::string>          &jsSource)
 {
     if (sInjectedOnce)
     {
         return;
     }
-
     sInjectedOnce = YES;
 
-    bool executed = false;
-
     bridgeless::RegisterNativeInterop(rt);
+
+    bool executed = false;
 
     if (bytecode && !bytecode->empty())
     {
         try
         {
             auto buffer   = std::make_shared<BytecodeBuffer>(bytecode);
-            auto prepared = rt.prepareJavaScript(buffer, "bridgeless/script.bundle");
+            auto prepared = rt.prepareJavaScript(buffer, "script.bundle");
             rt.evaluatePreparedJavaScript(prepared);
-            Log("script.bundle evaluated via runtime");
+            Log("Executed script.bundle via prepared bytecode");
             executed = true;
         }
         catch (const facebook::jsi::JSError &err)
@@ -194,17 +185,17 @@ static void EvaluatePayload(facebook::jsi::Runtime                      &rt,
         try
         {
             auto buffer = std::make_unique<facebook::jsi::StringBuffer>(*jsSource);
-            rt.evaluateJavaScript(std::move(buffer), "bridgeless/script.js");
-            Log("script.js evaluated via runtime");
+            rt.evaluateJavaScript(std::move(buffer), "script.js");
+            Log("Executed script.js (raw source)");
             executed = true;
         }
         catch (const facebook::jsi::JSError &err)
         {
-            Log("JSI error: %s", err.getMessage().c_str());
+            Log("JS source JSI error: %s", err.getMessage().c_str());
         }
         catch (const std::exception &ex)
         {
-            Log("std::exception: %s", ex.what());
+            Log("JS source std::exception: %s", ex.what());
         }
         catch (...)
         {
@@ -214,74 +205,38 @@ static void EvaluatePayload(facebook::jsi::Runtime                      &rt,
 
     if (!executed)
     {
-        Log("Payload evaluation skipped (no resources available)");
+        Log("No payload executed (no valid bytecode or source)");
     }
 }
 
-static void EnqueuePayload(RCTInstance *instance)
+static void InjectPayload(RCTInstance *instance)
 {
     if (!instance || sInjectedOnce)
     {
         return;
     }
 
-    auto jsSource = LoadPayloadSource();
     auto bytecode = LoadPayloadBytecode();
-    if ((!jsSource || jsSource->empty()) && (!bytecode || bytecode->empty()))
+    auto jsSource = LoadPayloadSource();
+
+    if ((!bytecode || bytecode->empty()) && (!jsSource || jsSource->empty()))
     {
-        Log("No payload resources available");
+        Log("No payload artifacts (hbc bundle or js) available");
         return;
     }
 
-    Log("Scheduling payload execution");
-
-    [instance
-        callFunctionOnBufferedRuntimeExecutor:std::function<void(facebook::jsi::Runtime &)>(
-                                                  [jsSource, bytecode](facebook::jsi::Runtime &rt) {
-                                                      EvaluatePayload(rt, jsSource, bytecode);
-                                                  })];
-}
-
-static BOOL TryRegisterSegment(RCTInstance *instance)
-{
-    NSBundle *bundle = ResourceBundle();
-    if (!bundle)
-    {
-        Log("Resource bundle unavailable for segment registration");
-        return NO;
-    }
-
-    NSString *path = [bundle pathForResource:@"script" ofType:@"bundle"];
-    if (path.length == 0)
-    {
-        Log("script.bundle unavailable; skipping segment registration");
-        return NO;
-    }
-
-    if (![[NSFileManager defaultManager] fileExistsAtPath:path])
-    {
-        Log("script.bundle missing at %@", path);
-        return NO;
-    }
-
-    static const uint32_t kSegmentId = 0x5EB1D1;
-    [instance registerSegmentWithId:@(kSegmentId) path:path];
-    Log("Registered script.bundle as segment id %u", (unsigned) kSegmentId);
-    [instance callFunctionOnBufferedRuntimeExecutor:std::function<void(facebook::jsi::Runtime &)>(
-                                                        [](facebook::jsi::Runtime &rt) {
-                                                            bridgeless::RegisterNativeInterop(rt);
-                                                        })];
-    sInjectedOnce = YES;
-    return YES;
+    Log("Scheduling payload injection");
+    [instance callFunctionOnBufferedRuntimeExecutor:
+                  std::function<void(facebook::jsi::Runtime &)>(
+                      [bytecode, jsSource](facebook::jsi::Runtime &rt) {
+                          EvaluatePayload(rt, bytecode, jsSource);
+                      })];
 }
 
 %hook RCTInstance
 - (void)_loadJSBundle:(NSURL *)sourceURL
 {
-    if (!TryRegisterSegment(self))
-    {
-        EnqueuePayload(self);
-    }
+    InjectPayload(self);
     %orig(sourceURL);
 }
 %end
