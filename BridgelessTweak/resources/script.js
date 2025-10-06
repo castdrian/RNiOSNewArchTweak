@@ -5,7 +5,8 @@
 		reactNative: null,
 		alertShown: false,
 		requireHookInstalled: false,
-		scanned: Object.create(null)
+		scanned: Object.create(null),
+		turboModule: null
 	};
 
 	function log(msg) {
@@ -44,6 +45,72 @@
 		return null;
 	}
 
+	function getTurboModuleRegistry(rn) {
+		if (!rn) {
+			return null;
+		}
+		var registry = null;
+		try {
+			if (rn.TurboModuleRegistry && typeof rn.TurboModuleRegistry.get === 'function') {
+				registry = rn.TurboModuleRegistry;
+			} else if (rn.TurboModuleRegistry && rn.TurboModuleRegistry.default && typeof rn.TurboModuleRegistry.default.get === 'function') {
+				registry = rn.TurboModuleRegistry.default;
+			} else if (typeof rn.__turboModuleProxy === 'function') {
+				registry = { get: rn.__turboModuleProxy };
+			} else if (typeof g.__turboModuleProxy === 'function') {
+				registry = { get: g.__turboModuleProxy };
+			}
+		} catch (_) { }
+		return registry;
+	}
+
+	function getNativeModule(rn, names) {
+		if (!rn || !names || !names.length) {
+			return null;
+		}
+		var nativeModules = null;
+		try {
+			nativeModules = rn.NativeModules || (rn.default && rn.default.NativeModules);
+		} catch (_) { }
+		if (nativeModules && typeof nativeModules === 'object') {
+			for (var i = 0; i < names.length; i++) {
+				var maybeModule = nativeModules[names[i]];
+				if (maybeModule) {
+					return maybeModule;
+				}
+			}
+		}
+		var turboModuleRegistry = getTurboModuleRegistry(rn);
+		if (turboModuleRegistry && typeof turboModuleRegistry.get === 'function') {
+			for (var j = 0; j < names.length; j++) {
+				try {
+					var turboModule = turboModuleRegistry.get(names[j]);
+					if (turboModule) {
+						return turboModule;
+					}
+				} catch (_) { }
+			}
+		}
+		return null;
+	}
+
+	function getTestTurboModule() {
+		if (!state.reactNative) {
+			return null;
+		}
+		if (state.turboModule) {
+			return state.turboModule;
+		}
+		var module = null;
+		try {
+			module = getNativeModule(state.reactNative, ['NativeTestModule']);
+		} catch (_) { }
+		if (module) {
+			state.turboModule = module;
+		}
+		return module;
+	}
+
 	function tryShowAlert(reason) {
 		if (state.alertShown) {
 			return true;
@@ -53,9 +120,31 @@
 			return false;
 		}
 		try {
-			alertModule.alert('bridgeless tweak', 'alert called from javascript using react native');
+			var baseMessage = 'alert called from javascript using react native';
+			var message = baseMessage;
+			var testTurboModule = null;
+			try {
+				testTurboModule = getTestTurboModule();
+			} catch (_) { }
+			if (testTurboModule) {
+				var systemVersion = null;
+				try {
+					systemVersion = testTurboModule.systemVersion;
+					if (typeof systemVersion === 'function') {
+						systemVersion = systemVersion();
+					}
+				} catch (_) { }
+				if (systemVersion != null) {
+					message = baseMessage + ' (iOS ' + String(systemVersion) + ')';
+				} else {
+					message = 'NativeTestModule.systemVersion unavailable';
+				}
+			} else {
+				message = 'NativeTestModule not found';
+			}
+			alertModule.alert('bridgeless tweak', message);
 			state.alertShown = true;
-			log('Alert displayed (' + reason + ')');
+			log('Alert displayed (' + reason + '): ' + message);
 			return true;
 		} catch (err) {
 			log('Alert failed: ' + String(err && err.message ? err.message : err));

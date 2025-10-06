@@ -10,6 +10,19 @@
     "start": "react-native start",
     "test": "jest"
   },
+  "codegenConfig": {
+    "name": "NativeTestModuleSpec",
+    "type": "modules",
+    "jsSrcsDir": "specs",
+    "android": {
+      "javaPackageName": "com.bridgelessapp.nativetestmodule"
+    },
+    "ios": {
+      "modulesProvider": {
+        "NativeTestModule": "RCTNativeTestModule"
+      }
+    }
+  },
   "dependencies": {
     "react": "19.1.0",
     "react-native": "0.81.4",
