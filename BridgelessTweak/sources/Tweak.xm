@@ -276,50 +276,14 @@ static BOOL TryRegisterSegment(RCTInstance *instance)
     return YES;
 }
 
-static void WaitForBundleAndInject(RCTInstance *instance)
-{
-    if (!instance || sInjectedOnce)
-    {
-        return;
-    }
-
-    static id sBundleObserver = nil;
-    if (sBundleObserver)
-    {
-        return;
-    }
-
-    __weak RCTInstance *weakInstance = instance;
-    sBundleObserver                  = [[NSNotificationCenter defaultCenter]
-        addObserverForName:@"RCTInstanceDidLoadBundle"
-                    object:nil
-                     queue:nil
-                usingBlock:^(NSNotification *note) {
-                    [[NSNotificationCenter defaultCenter] removeObserver:sBundleObserver];
-                    sBundleObserver = nil;
-
-                    __strong RCTInstance *strongInstance = weakInstance;
-                    if (!strongInstance)
-                    {
-                        Log("Bundle notification received but instance deallocated");
-                        return;
-                    }
-
-                    if (!TryRegisterSegment(strongInstance))
-                    {
-                        EnqueuePayload(strongInstance);
-                    }
-                }];
-
-    Log("Registered for RCTInstanceDidLoadBundle notification");
-}
-
 %hook RCTInstance
-
 - (void)_loadJSBundle:(NSURL *)sourceURL
 {
+    if (!TryRegisterSegment(self))
+    {
+        EnqueuePayload(self);
+    }
     %orig(sourceURL);
-    WaitForBundleAndInject(self);
 }
 %end
 
