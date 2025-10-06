@@ -11,13 +11,6 @@ TWEAK_NAME = Bridgeless
 $(TWEAK_NAME)_FILES = $(shell find sources -type f \( -name "*.x*" -o -name "*.m*" -o -name "*.c*" \))
 $(TWEAK_NAME)_CFLAGS = -fobjc-arc -std=c++20 -DPACKAGE_VERSION='@"$(THEOS_PACKAGE_BASE_VERSION)"' -Iheaders \
 	-I../BridgelessApp/node_modules/react-native/ReactCommon/jsi \
-	-I../BridgelessApp/node_modules/react-native/ReactCommon \
-	-I../BridgelessApp/node_modules/react-native/ReactCommon/react \
-	-I../BridgelessApp/node_modules/react-native/ReactCommon/react/nativemodule/core \
-	-I../BridgelessApp/node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios \
-	-I../BridgelessApp/node_modules/react-native/React \
-	-I../BridgelessApp/node_modules/react-native/Libraries \
-	-I../BridgelessApp/node_modules/react-native \
 
 $(TWEAK_NAME)_LDFLAGS += -undefined dynamic_lookup
 $(TWEAK_NAME)_FRAMEWORKS = Foundation UIKit
