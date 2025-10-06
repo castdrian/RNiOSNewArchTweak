@@ -14,18 +14,6 @@ namespace {
 static constexpr const char *kGlobalName = "__bridgelessNative";
 static constexpr const char *kSystemVersionProp = "systemVersion";
 
-std::string FetchSystemVersion()
-{
-    static std::string cached;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        NSString *version = [UIDevice currentDevice].systemVersion ?: @"";
-        cached = version.UTF8String ? version.UTF8String : "";
-        INTEROP_LOG(@"Fetched system version: %@", version);
-    });
-    return cached;
-}
-
 Value SystemVersionHostFunction(Runtime &runtime,
                                 const Value &thisValue,
                                 const Value *arguments,
@@ -34,7 +22,13 @@ Value SystemVersionHostFunction(Runtime &runtime,
     (void) thisValue;
     (void) arguments;
     (void) count;
-    return String::createFromUtf8(runtime, FetchSystemVersion());
+    @autoreleasepool {
+        NSString *version = [UIDevice currentDevice].systemVersion ?: @"";
+        INTEROP_LOG(@"systemVersion() called -> %@", version);
+        const char *utf8 = [version UTF8String];
+        std::string cppVersion = utf8 ? utf8 : "";
+        return String::createFromUtf8(runtime, cppVersion);
+    }
 }
 
 bool ShouldInstall(Runtime &runtime)
