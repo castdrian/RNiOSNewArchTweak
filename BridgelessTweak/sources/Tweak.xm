@@ -115,7 +115,7 @@ private:
     std::shared_ptr<std::vector<uint8_t>> bytes_;
 };
 
-} // namespace
+}
 
 static std::shared_ptr<std::vector<uint8_t>> LoadPayloadBytecode(void)
 {
