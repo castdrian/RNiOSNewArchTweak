@@ -6,7 +6,6 @@
 		alertShown: false,
 		requireHookInstalled: false,
 		scanned: Object.create(null),
-		turboModule: null
 	};
 
 	function log(msg) {
@@ -45,70 +44,21 @@
 		return null;
 	}
 
-	function getTurboModuleRegistry(rn) {
-		if (!rn) {
+	function getInteropSystemVersion() {
+		try {
+			var interop = g.__bridgelessNative;
+			if (!interop) {
+				return null;
+			}
+			var accessor = interop.systemVersion;
+			var value = typeof accessor === 'function' ? accessor() : accessor;
+			if (value == null) {
+				return null;
+			}
+			return String(value);
+		} catch (_) {
 			return null;
 		}
-		var registry = null;
-		try {
-			if (rn.TurboModuleRegistry && typeof rn.TurboModuleRegistry.get === 'function') {
-				registry = rn.TurboModuleRegistry;
-			} else if (rn.TurboModuleRegistry && rn.TurboModuleRegistry.default && typeof rn.TurboModuleRegistry.default.get === 'function') {
-				registry = rn.TurboModuleRegistry.default;
-			} else if (typeof rn.__turboModuleProxy === 'function') {
-				registry = { get: rn.__turboModuleProxy };
-			} else if (typeof g.__turboModuleProxy === 'function') {
-				registry = { get: g.__turboModuleProxy };
-			}
-		} catch (_) { }
-		return registry;
-	}
-
-	function getNativeModule(rn, names) {
-		if (!rn || !names || !names.length) {
-			return null;
-		}
-		var nativeModules = null;
-		try {
-			nativeModules = rn.NativeModules || (rn.default && rn.default.NativeModules);
-		} catch (_) { }
-		if (nativeModules && typeof nativeModules === 'object') {
-			for (var i = 0; i < names.length; i++) {
-				var maybeModule = nativeModules[names[i]];
-				if (maybeModule) {
-					return maybeModule;
-				}
-			}
-		}
-		var turboModuleRegistry = getTurboModuleRegistry(rn);
-		if (turboModuleRegistry && typeof turboModuleRegistry.get === 'function') {
-			for (var j = 0; j < names.length; j++) {
-				try {
-					var turboModule = turboModuleRegistry.get(names[j]);
-					if (turboModule) {
-						return turboModule;
-					}
-				} catch (_) { }
-			}
-		}
-		return null;
-	}
-
-	function getTestTurboModule() {
-		if (!state.reactNative) {
-			return null;
-		}
-		if (state.turboModule) {
-			return state.turboModule;
-		}
-		var module = null;
-		try {
-			module = getNativeModule(state.reactNative, ['NativeTestModule']);
-		} catch (_) { }
-		if (module) {
-			state.turboModule = module;
-		}
-		return module;
 	}
 
 	function tryShowAlert(reason) {
@@ -122,25 +72,12 @@
 		try {
 			var baseMessage = 'alert called from javascript using react native';
 			var message = baseMessage;
-			var testTurboModule = null;
-			try {
-				testTurboModule = getTestTurboModule();
-			} catch (_) { }
-			if (testTurboModule) {
-				var systemVersion = null;
-				try {
-					systemVersion = testTurboModule.systemVersion;
-					if (typeof systemVersion === 'function') {
-						systemVersion = systemVersion();
-					}
-				} catch (_) { }
-				if (systemVersion != null) {
-					message = baseMessage + ' (iOS ' + String(systemVersion) + ')';
-				} else {
-					message = 'NativeTestModule.systemVersion unavailable';
-				}
+			var systemVersion = getInteropSystemVersion();
+			if (systemVersion != null) {
+				log('Native interop systemVersion: ' + systemVersion);
+				message = baseMessage + ' (iOS ' + systemVersion + ')';
 			} else {
-				message = 'NativeTestModule not found';
+				log('Native interop systemVersion unavailable');
 			}
 			alertModule.alert('bridgeless tweak', message);
 			state.alertShown = true;

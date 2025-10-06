@@ -1,21 +1,14 @@
 #import <Foundation/Foundation.h>
 #import <jsi/jsi.h>
-#include <memory>
+#import <memory>
 #import <objc/runtime.h>
 #import <rootless.h>
-#include <string>
-#include <utility>
-#include <vector>
+#import <string>
+#import <utility>
+#import <vector>
 
-#define _LOG_PREFIX   "[Bridgeless]"
-#define Log(fmt, ...) NSLog(@_LOG_PREFIX " " fmt, ##__VA_ARGS__)
-
-@interface RCTInstance : NSObject
-- (void)callFunctionOnBufferedRuntimeExecutor:
-    (std::function<void(facebook::jsi::Runtime &runtime)> &&)executor;
-- (void)_loadJSBundle:(NSURL *)sourceURL;
-- (void)registerSegmentWithId:(NSNumber *)segmentId path:(NSString *)path;
-@end
+#import "NativeInterop.h"
+#import "Tweak.h"
 
 static BOOL sInjectedOnce = NO;
 
@@ -170,6 +163,8 @@ static void EvaluatePayload(facebook::jsi::Runtime                      &rt,
 
     bool executed = false;
 
+    bridgeless::RegisterNativeInterop(rt);
+
     if (bytecode && !bytecode->empty())
     {
         try
@@ -272,6 +267,10 @@ static BOOL TryRegisterSegment(RCTInstance *instance)
     static const uint32_t kSegmentId = 0x5EB1D1;
     [instance registerSegmentWithId:@(kSegmentId) path:path];
     Log("Registered script.bundle as segment id %u", (unsigned) kSegmentId);
+    [instance callFunctionOnBufferedRuntimeExecutor:std::function<void(facebook::jsi::Runtime &)>(
+                                                        [](facebook::jsi::Runtime &rt) {
+                                                            bridgeless::RegisterNativeInterop(rt);
+                                                        })];
     sInjectedOnce = YES;
     return YES;
 }

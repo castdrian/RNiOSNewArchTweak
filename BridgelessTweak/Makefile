@@ -10,7 +10,7 @@ include $(THEOS)/makefiles/common.mk
 TWEAK_NAME = Bridgeless
 $(TWEAK_NAME)_FILES = $(shell find sources -type f \( -name "*.x*" -o -name "*.m*" -o -name "*.c*" \))
 $(TWEAK_NAME)_CFLAGS = -fobjc-arc -std=c++20 -DPACKAGE_VERSION='@"$(THEOS_PACKAGE_BASE_VERSION)"' -Iheaders \
-	-Isources/NativeTestModule -I../BridgelessApp/node_modules/react-native/ReactCommon/jsi \
+	-I../BridgelessApp/node_modules/react-native/ReactCommon/jsi \
 	-I../BridgelessApp/node_modules/react-native/ReactCommon \
 	-I../BridgelessApp/node_modules/react-native/ReactCommon/react \
 	-I../BridgelessApp/node_modules/react-native/ReactCommon/react/nativemodule/core \
@@ -18,17 +18,7 @@ $(TWEAK_NAME)_CFLAGS = -fobjc-arc -std=c++20 -DPACKAGE_VERSION='@"$(THEOS_PACKAG
 	-I../BridgelessApp/node_modules/react-native/React \
 	-I../BridgelessApp/node_modules/react-native/Libraries \
 	-I../BridgelessApp/node_modules/react-native \
-	-I../BridgelessApp/ios/Pods/Headers/Public \
-	-I../BridgelessApp/ios/Pods/Headers/Private \
-	-I../BridgelessApp/ios/Pods/Headers/Public/React-Core \
-	-I../BridgelessApp/ios/Pods/Headers/Public/RCTTypeSafety \
-	-I../BridgelessApp/ios/Pods/Headers/Public/RCTRequired \
-	-I../BridgelessApp/ios/Pods/Headers/Public/ReactCommon \
-	-I../BridgelessApp/ios/Pods/Headers/Public/RCT-Folly \
-	-I../BridgelessApp/ios/Pods/Headers/Public/FBLazyVector \
-	-I../BridgelessApp/ios/Pods/Headers/Public/React-callinvoker \
-	-I../BridgelessApp/ios/Pods/Headers/Public/DoubleConversion \
-	-I../BridgelessApp/ios/Pods/Headers/Public/fmt
+
 $(TWEAK_NAME)_LDFLAGS += -undefined dynamic_lookup
 $(TWEAK_NAME)_FRAMEWORKS = Foundation UIKit
 
